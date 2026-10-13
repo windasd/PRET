@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
@@ -52,7 +52,7 @@ def intro(quiet):
         print("  |           |   ô| ||                                            ")
         print("  |___________|   ô| ||                                            ")
         print("  | ||/.´---.||    | ||      「 pentesting tool that made          ")
-        print("  |-||/_____\||-.  | |´         dumpster diving obsolete‥ 」       ")
+        print(r"  |-||/_____\||-.  | |´         dumpster diving obsolete‥ 」       ")
         print("  |_||=L==H==||_|__|/                                              ")
         print("                                                                   ")
         print("     (ASCII art by                                                 ")

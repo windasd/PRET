@@ -11,7 +11,7 @@ import requests
 import urllib3
 
 # local pret classes
-from helper import output, item
+from helper import output, conv, item
 
 # third party modules
 try:
@@ -79,10 +79,10 @@ class capabilities():
             sys.stdout.write("Checking for IPP support:         ")
             body = ("\x01\x01\x00\x0b\x00\x01\xab\x10\x01G\x00\x12attributes-charset\x00\x05utf-8H"
                     + "\x00\x1battributes-natural-language\x00\x02enE\x00\x0bprinter-uri\x00\x14ipp:"
-                    + "//localhost/ipp/D\x00\x14requested-attributes\x00\x13printer-description\x03").encode()
+                    + "//localhost/ipp/D\x00\x14requested-attributes\x00\x13printer-description\x03")
             request = requests.get("http://" + host + ":631/",
-                                   data=body, headers={'Content-type': 'application/ipp'})
-            response = request.content.decode()
+                                   data=conv().encode(body), headers={'Content-type': 'application/ipp'})
+            response = conv().decode(request.content)
             # get name of device
             # e.g. MDL:hp LaserJet 4250
             model = item(re.findall("MDL:(.+?);", response))
