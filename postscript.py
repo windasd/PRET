@@ -101,7 +101,7 @@ class postscript(printer):
                 if re.search(c.PS_FLUSH, str_recv):
                     break
                 # fetch user input and send it to postscript shell
-                self.send(eval(input("")) + "\n")
+                self.send(input("") + "\n")
         # handle CTRL+C and exceptions
         except (EOFError, KeyboardInterrupt) as e:
             pass
@@ -156,7 +156,7 @@ class postscript(printer):
 
     # escape postscript pathname
     def escape(self, path):
-        return path.replace('\\', '\\\\').replace('(', '\(').replace(')', '\)')
+        return path.replace('\\', '\\\\').replace('(', r'\(').replace(')', r'\)')
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # get complete list of files and directories on remote device
@@ -220,7 +220,7 @@ class postscript(printer):
     def do_mkdir(self, arg):
         "Create remote directory:  mkdir <path>"
         if not arg:
-            arg = eval(input("Directory: "))
+            arg = input("Directory: ")
         # writing to dir/file should automatically create dir/
         # .dirfile is not deleted as empty dirs are not listed
         self.put(self.rpath(arg) + c.SEP + '.dirfile', '')
@@ -263,7 +263,7 @@ class postscript(printer):
 
     # ------------------------[ rename <old> <new> ]----------------------
     def do_rename(self, arg):
-        arg = re.split("\s+", arg, 1)
+        arg = re.split(r"\s+", arg, 1)
         if len(arg) > 1:
             old = self.rpath(arg[0])
             new = self.rpath(arg[1])
@@ -399,7 +399,7 @@ class postscript(printer):
     def do_lock(self, arg):
         "Set startjob and system parameters password."
         if not arg:
-            arg = eval(input("Enter password: "))
+            arg = input("Enter password: ")
         self.cmd('<< /Password () '
                  '/SystemParamsPassword (' + arg + ') '  # harmless settings
                  '/StartJobPassword (' + arg + ') '     # alter initial vm!
@@ -543,7 +543,7 @@ class postscript(printer):
     def do_overlay(self, arg):
         "Put overlay image on all hard copies:  overlay <file>"
         if not arg:
-            arg = eval(input('File: '))
+            arg = input('File: ')
         if arg.endswith('ps'):
             data = file().read(arg)  # already ps/eps file
         else:
@@ -573,7 +573,7 @@ class postscript(printer):
 
     # ------------------------[ cross <text> <font> ]---------------------
     def do_cross(self, arg):
-        arg = re.split("\s+", arg, 1)
+        arg = re.split(r"\s+", arg, 1)
         if len(arg) > 1 and arg[0] in self.options_cross:
             font, text = arg
             text = text.strip('"')
@@ -604,7 +604,7 @@ class postscript(printer):
     # ------------------------[ replace <old> <new> ]---------------------
     def do_replace(self, arg):
         "Replace string in documents to be printed:  replace <old> <new>"
-        arg = re.split("\s+", arg, 1)
+        arg = re.split(r"\s+", arg, 1)
         if len(arg) > 1:
             output().psonly()
             oldstr, newstr = self.escape(arg[0]), self.escape(arg[1])
@@ -939,7 +939,7 @@ class postscript(printer):
                    '/remove {exch pop () exch 3 1 roll exch strcat strcat} def\n'       \
                    '/escape { {(")   search {remove}{exit} ifelse} loop \n'             \
                    '          {(/)   search {remove}{exit} ifelse} loop \n'             \
-                   '          {(\\\) search {remove}{exit} ifelse} loop } def\n'        \
+                   '          {(\\\\) search {remove}{exit} ifelse} loop } def\n'        \
                    '/clones 220 array def /counter 0 def % performance drawback\n'      \
                    '/redundancy { /redundant false def\n'                               \
                    '  clones {exch dup 3 1 roll eq {/redundant true def} if} forall\n'  \
@@ -1020,13 +1020,13 @@ class postscript(printer):
     # bad practice
     def clean_json(self, string):
         string = re.sub(",[ \t\r\n]+}", "}", string)
-        string = re.sub(",[ \t\r\n]+\]", "]", string)
+        string = re.sub(",[ \t\r\n]+\\]", "]", string)
         return string
         # return str(string, errors='ignore')
 
     # ------------------------[ resource <category> [dump] ]--------------
     def do_resource(self, arg):
-        arg = re.split("\s+", arg, 1)
+        arg = re.split(r"\s+", arg, 1)
         cat, dump = arg[0], len(arg) > 1
         self.populate_resource()
         if cat in self.options_resource:
@@ -1084,7 +1084,7 @@ class postscript(printer):
 
     # ------------------------[ config <setting> ]------------------------
     def do_config(self, arg):
-        arg = re.split("\s+", arg, 1)
+        arg = re.split(r"\s+", arg, 1)
         (arg, val) = tuple(arg) if len(arg) > 1 else (arg[0], None)
         if arg in list(self.options_config.keys()):
             key = self.options_config[arg]

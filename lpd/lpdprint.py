@@ -41,9 +41,9 @@ except IOError as e:
 
 
 def check_acknowledgement():
-    if s.recv(4096) != "\000":
+    if s.recv(4096) != b"\000":
         print("Negative acknowledgement")
-        s.send("\001\n")  # [ RFC 1179 | 6.1 01 - Abort job ]
+        s.send(b"\001\n")  # [ RFC 1179 | 6.1 01 - Abort job ]
         s.close()
         sys.exit()
 
@@ -57,7 +57,7 @@ s.connect((args.hostname, 515))
 # --------[ RFC 1179 | 5.2 02 - Receive a printer job ]-----------------
 
 queue = "lp"  # see https://www.brooksnet.com/content/faq-lpd-queue-names-network-print-servers
-s.send("\002"+queue+"\n")
+s.send(("\002"+queue+"\n").encode())
 check_acknowledgement()
 
 # --------[ RFC 1179 | 6.2 02 - Receive control file ]------------------
@@ -67,16 +67,16 @@ username = "nobody"
 
 ctrl = 'H'+hostname[:31]+"\n" + 'P'+username[:31]+"\n"
 
-s.send("\002"+str(len(ctrl))+" "+"cfA001"+hostname+"\n")
+s.send(("\002"+str(len(ctrl))+" "+"cfA001"+hostname+"\n").encode())
 check_acknowledgement()
-s.send(ctrl + "\000")  # send control file || file complete indicator
+s.send((ctrl + "\000").encode())  # send control file || file complete indicator
 check_acknowledgement()
 
 # --------[ RFC 1179 | 6.3 03 - Receive data file ]---------------------
 
-s.send("\003"+str(len(data))+" "+"dfA001"+hostname+"\n")
+s.send(("\003"+str(len(data))+" "+"dfA001"+hostname+"\n").encode())
 check_acknowledgement()
-s.sendall(data + "\000")  # send data file || file complete indicator
+s.sendall(data + b"\000")  # send data file || file complete indicator
 check_acknowledgement()
 
 # ----------------------------------------------------------------------

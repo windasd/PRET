@@ -11,19 +11,22 @@ import re
 import stat
 import math
 import time
+import codecs
 import datetime
 import importlib
-import traceback
+
+# do not crash on chars the console cannot display (e.g. cp950 on windoze)
+for stream in (sys.stdout, sys.stderr):
+    try:
+        stream.reconfigure(errors='replace')
+    except AttributeError:
+        pass
+
+# chars beyond latin-1 (e.g. typed by the user) are sent as utf-8
+codecs.register_error('pret.utf8', lambda e: (
+    e.object[e.start:e.end].encode('utf-8'), e.end))
 
 # third party modules
-try:  # unicode monkeypatch for windoze
-    import win_unicode_console
-    win_unicode_console.enable()
-except:
-    msg = "Please install the 'win_unicode_console' module."
-    if os.name == 'nt':
-        print(msg)
-
 try:  # os independent color support
     from colorama import init, Fore, Back, Style
     init()  # required to get colors on windoze
@@ -83,7 +86,7 @@ class log():
         # logfile open and data non-empty
         if logfile and data:
             try:
-                logfile.write(data)
+                logfile.write(conv().encode(data))
             except IOError as e:
                 output().errmsg("Cannot log", e)
 
@@ -149,7 +152,7 @@ class output():
     def errmsg(self, msg, info=""):
         info = str(info).strip()
         if info:  # monkeypatch to make python error message less ugly
-            info = item(re.findall('Errno -?\d+\] (.*)', info),
+            info = item(re.findall(r'Errno -?\d+\] (.*)', info),
                         '') or info.splitlines()[-1]
             info = Style.RESET_ALL + Style.DIM + \
                 " (" + info.strip('<>') + ")" + Style.RESET_ALL
@@ -379,6 +382,25 @@ class conv():
             n = 0
         return n
 
+    # convert str to raw bytes (one byte per char, see 'pret.utf8' above)
+    def encode(self, data):
+        if isinstance(data, bytes):
+            return data
+        return data.encode('latin-1', 'pret.utf8')
+
+    # convert raw bytes to str (one char per byte, binary safe)
+    def decode(self, data):
+        if isinstance(data, str):
+            return data
+        return data.decode('latin-1')
+
+    # make raw data human readable if it is utf-8 encoded text
+    def text(self, data):
+        try:
+            return data.encode('latin-1').decode('utf-8')
+        except UnicodeError:
+            return data
+
 # ----------------------------------------------------------------------
 
 
@@ -389,7 +411,7 @@ class file():
             with open(path, mode='rb') as f:
                 data = f.read()
             f.close()
-            return data
+            return conv().decode(data)
         except IOError as e:
             output().errmsg("Cannot read from file", e)
 
@@ -397,7 +419,7 @@ class file():
     def write(self, path, data, m='wb'):
         try:
             with open(path, mode=m) as f:
-                f.write(data)
+                f.write(conv().encode(data))
             f.close()
         except IOError as e:
             output().errmsg("Cannot write to file", e)
@@ -450,26 +472,22 @@ class conn(object):
     def send(self, data):
         if self.debug:
             output().send(self.beautify(data), self.debug)
+        data = conv().encode(data)
         # send data to device
         if self._file:
             return os.write(self._file, data)
         # send data to socket
         elif self._sock:
-            if not isinstance(data, bytes):
-                data = data.encode()
-            try:
-                return self._sock.sendall(data)
-            except:
-                print(traceback.print_exc())
+            return self._sock.sendall(data)
 
     # receive data
     def recv(self, bytes):
         # receive data from device
         if self._file:
-            data = os.read(self._file, bytes).decode()
+            data = conv().decode(os.read(self._file, bytes))
         # receive data from socket
         else:
-            data = self._sock.recv(bytes).decode()
+            data = conv().decode(self._sock.recv(bytes))
         # output recv data when in debug mode
         if self.debug:
             output().recv(self.beautify(data), self.debug)
@@ -550,12 +568,7 @@ class conn(object):
     # beautify debug output
     def beautify(self, data):
         # remove sent/recv uel sequences
-        """if isinstance(data, bytes):
-          try:
-            data = data.decode()
-          except UnicodeDecodeError:
-            data = "[PDF bytes]"""
-        data = re.sub(r'' + const.UEL, '', str(data))
+        data = re.sub(r'' + const.UEL, '', conv().decode(data))
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         if self.mode == 'ps':
             # remove sent postscript header
@@ -597,9 +610,9 @@ class const():  # define constants
     EOF = EOL + '\x0c\x04'  # potential end of file chars
     DELIMITER = "DELIMITER"  # delimiter marking end of response
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    PS_CATCH = '%%\[ (.*)\]%%'
-    PS_ERROR = '%%\[ Error: (.*)\]%%'
-    PS_FLUSH = '%%\[ Flushing: (.*)\]%%'
+    PS_CATCH = r'%%\[ (.*)\]%%'
+    PS_ERROR = r'%%\[ Error: (.*)\]%%'
+    PS_FLUSH = r'%%\[ Flushing: (.*)\]%%'
     PS_PROMPT = '>'  # TBD: could be derived from PS command 'prompt'
     PS_HEADER = '@PJL ENTER LANGUAGE = POSTSCRIPT\n%!\n'
     PS_GLOBAL = 'true 0 startjob pop\n'  # 'serverdict begin 0 exitserver'

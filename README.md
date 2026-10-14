@@ -10,13 +10,13 @@ The main idea of PRET is to facilitate the communication between the end-user an
 
 ### Installation
 
-PRET only requires a Python2 interpreter. For colored output and SNMP support however, third party modules need to be installed:
+PRET requires a Python 3 interpreter and the *requests* module. For colored output, install *colorama* as well:
 
-    # pip install colorama pysnmp
+    # pip install requests colorama
 
-If running on a Windows console and Unicode characters are not displayed correctly, install the *win_unicode_console* module:
+SNMP printer discovery (running PRET without arguments or the `discover` command) relies on the legacy *pysnmp* asyncore API, which was removed in pysnmp 7. On Python 3.12 and later, install the last compatible versions instead:
 
-    # pip install win_unicode_console
+    # pip install "pysnmp==4.4.12" "pyasn1<0.5" pyasyncore
 
 For experimental, ‘driverless’ printing (see print command), ImageMagick and GhostScript need to be installed:
 
